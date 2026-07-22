@@ -1,0 +1,50 @@
+@echo off
+chcp 65001 >nul
+REM Windows launcher for Xujin Workflow (local offline orchestrator).
+
+setlocal EnableDelayedExpansion
+
+cd /d "%~dp0"
+set "ROOT_DIR=%cd%"
+
+python --version >nul 2>&1
+if %errorlevel% neq 0 (
+    py --version >nul 2>&1
+    if %errorlevel% neq 0 (
+        echo Error: Python not found. Please install Python 3.10+ first.
+        exit /b 1
+    )
+    set "PYTHON=py"
+) else (
+    set "PYTHON=python"
+)
+
+set "VENV_DIR=%ROOT_DIR%\.venv"
+if not exist "%VENV_DIR%" (
+    echo Creating virtual environment...
+    %PYTHON% -m venv "%VENV_DIR%"
+)
+call "%VENV_DIR%\Scripts\activate.bat"
+
+echo Checking dependencies...
+pip install -q -r "%ROOT_DIR%\requirements.txt"
+
+set "PORT=8080"
+set "WORKFLOW_ROOT=%USERPROFILE%\.claude\skills"
+if not exist "%ROOT_DIR%\logs" mkdir "%ROOT_DIR%\logs"
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr :%PORT%') do (
+    echo Port %PORT% occupied by %%a, stopping...
+    taskkill /PID %%a /F >nul 2>&1
+    timeout /t 1 /nobreak >nul
+)
+
+echo.
+echo ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+echo   Xujin Workflow Web UI
+echo   http://127.0.0.1:%PORT%/
+echo ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+echo.
+
+"%VENV_DIR%\Scripts\python.exe" -m xujin_workflow.webui --root "%WORKFLOW_ROOT%" --port %PORT%
+
+endlocal

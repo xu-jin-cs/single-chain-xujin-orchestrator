@@ -1,0 +1,41 @@
+<!-- AUTO-GENERATED from {{ meta.skill_id }}/flow.yml. DO NOT EDIT. -->
+---
+name: {{ meta.skill_id }}
+description: {{ meta.description }}
+aliases: {{ meta.aliases | tojson }}
+disallow-tools: ["Bash"]
+allowed-tools: ["Read", "Write"]
+---
+
+# {{ meta.skill_id }}
+## 入参
+{% set schema = meta.input_schema %}
+{% for param_name, param_info in schema.properties.items() %}
+- `{{ param_name }}`: {{ param_info.type }}，{{ param_info.description }}
+{% endfor %}
+
+## 静态执行链路（flow.yml原始拓扑顺序）
+{{ meta.exec_chain | join(' → ') }}
+
+## 业务约束规则
+{% for rule in meta.rules %}
+{{ loop.index }}. {{ rule }}
+{% endfor %}
+
+## 数据生成强制约束
+1. 首节点必须接收用户传入参数，基于参数生成真实实例数据；
+2. **所有节点禁止仅输出空白 JSON Schema，必须产出填充完成的业务实体数据；**
+3. 后续节点严格读取约定路径下前序节点输出文件作为上下文，禁止跨节点读取无关文件；
+4. 交付物文件名与路径必须和 flow.yml 中定义的 deliverables 完全一致。
+
+## 执行方式（固定会话推演模式）
+1. 使用 `Read` 工具读取 `{{ meta.skill_id }}/flow.yml` 获取完整工作流拓扑、节点定义与交付物定义；
+2. 将用户输入参数作为首节点上下文注入；
+3. **在当前会话内按照 flow.yml 定义顺序串行执行全部 Agent**；依靠 Read 读取上游交付文件、Write 持久化节点输出；
+4. 默认按链条顺序向后推进；校验失败禁止继续向后执行，支持跨层级回退至任意前置节点重新迭代；
+5. 全部节点执行完毕后输出最终成品数据。
+
+## 硬性全局约束
+1. 全程禁止调用 Bash 工具，禁止搜寻、启动外部可执行程序；
+2. 禁止启用 MCP 协议，所有交互依托当前技能体系；
+3. 不允许自主新增探测地址、不允许构造任意未知外部调用指令。

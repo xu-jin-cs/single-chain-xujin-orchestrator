@@ -1,0 +1,50 @@
+<!-- AUTO-GENERATED from {{ meta.skill_id }}/flow.yml. DO NOT EDIT. -->
+---
+name: {{ meta.skill_id }}
+description: {{ meta.description }}
+aliases: {{ meta.aliases | tojson }}
+disallow-tools: ["Bash"]
+allowed-tools: ["Read","Write","Fetch"]
+---
+
+# {{ meta.skill_id }}
+## 入参
+{% set schema = meta.input_schema %}
+{% for param_name, param_info in schema.properties.items() %}
+- `{{ param_name }}`: {{ param_info.type }}，{{ param_info.description }}
+{% endfor %}
+
+## 静态执行链路（flow.yml原始拓扑顺序，仅供兜底模式参考）
+{{ meta.exec_chain | join(' → ') }}
+
+## 业务约束规则
+{% for rule in meta.rules %}
+{{ loop.index }}. {{ rule }}
+{% endfor %}
+
+## 数据生成强制约束
+1. 首节点必须接收用户传入参数，基于参数生成真实实例数据；
+2. **所有节点禁止仅输出空白 JSON Schema，必须产出填充完成的业务实体数据；**
+3. 后续节点严格读取约定路径下前序节点输出文件作为上下文，禁止跨节点读取无关文件；
+4. 交付物文件名与路径必须和 flow.yml 中定义的 deliverables 完全一致。
+
+## 执行分流逻辑
+1. 使用Read工具读取 `{{ meta.skill_id }}/flow.yml` 获取完整工作流拓扑、节点定义与交付物定义。
+2. 通过Fetch工具访问预设健康接口 http://127.0.0.1:8001/api/health，请求超时限制3秒；
+   - 规则：仅执行一次探测，禁止循环重试；禁止模型修改接口地址、自定义探测目标。
+3. 分流策略：
+   ✅ 探测正常返回：优先启用LangGraph+Harness外部链路执行；节点调度、条件分支、跨层级回退、迭代循环全部由外部引擎负责；技能仅转发入参，不干预流程走向。
+   ❌ 超时/连接失败/异常返回：切换至自研内置引擎执行；完整流程调度由内置引擎管控。
+   ⚠️ 仅当外部引擎、自研内置引擎均不可用时，自动降级至本地会话推演模式。
+
+## 会话推演模式规范（仅终极兜底分支生效）
+在当前会话内按照flow.yml定义顺序串行执行全部Agent；依靠Read读取上游交付文件、Write持久化节点输出；
+1. 默认按链条顺序向后推进；
+2. 校验失败禁止继续向后执行；支持跨层级回退至任意前置节点重新迭代；
+3. 所有节点严格遵守上方【数据生成强制约束】。
+
+## 硬性全局约束
+1. 全程禁止调用Bash工具，禁止搜寻、启动外部可执行程序；
+2. 禁止启用MCP协议，所有交互依托当前技能体系；
+3. 不允许自主新增探测地址、不允许构造任意未知外部调用指令；
+4. 只要使用外置引擎 / 自研内置引擎，模型禁止私自篡改引擎下发的执行顺序与节点跳转逻辑。

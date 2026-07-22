@@ -1,0 +1,14 @@
+{
+  "global_whitelist": {
+    "extensions": [".md", ".txt", ".json", ".yml", ".yaml", ".pdf", ".png", ".jpg", ".jpeg", ".xlsx", ".csv"],
+    "max_size_mb": 50
+  },
+  "global_blacklist": {
+    "extensions": [".exe", ".bat", ".sh", ".bin", ".dll", ".so", ".dylib"]
+  },
+  "offline_command_aliases": {
+    "xujin": "/xujin"
+  },
+  "default_beginner_mode": true,
+  "log_level": 2
+}

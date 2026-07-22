@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "xujin-workflow"
+version = "1.0.0"
+description = "Xujin Workflow - local offline multi-agent workflow orchestration"
+requires-python = ">=3.10"
+dependencies = [
+    "pyyaml>=6.0",
+    "flask>=3.0",
+    "jinja2>=3.1",
+]
+
+[project.scripts]
+xujin = "xujin_workflow.executor:main"
+xujin-webui = "xujin_workflow.webui:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
